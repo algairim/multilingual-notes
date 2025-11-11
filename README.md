@@ -10,9 +10,14 @@ instance for authentication, all managed with Docker Compose.
 First, ensure you have Docker and Docker Compose installed. Create a `.env` file in the project root,
 using `.env.example` as a template, to provide the necessary secrets. To build and start all services
 (including a pre-configured Keycloak realm and a sample user), you must first **clean any old data
-volumes** to ensure the Keycloak realm is imported correctly. Run `docker compose down -v` to remove
-persistent data, then run `docker compose up --build`. The application will be available at
-http://localhost:8081, and the Keycloak admin console at http://localhost:8080.
+volumes** to ensure the Keycloak realm is imported correctly.
+
+Run `docker compose down -v` to remove  persistent data, then run `docker compose up --build`.
+The application will be available at http://localhost:8081, and the Keycloak admin console at http://localhost:8080.
+
+There is a pre-populated user with id `user` and password `Passw0rd!`. Demo script creates additionally another user
+via REST APIs with id `demo` and same password `Passw0rd!`. You can create any number of users via _Register_ form, and
+manage them in the Keycloak admin console under `notes_realm`.
 
 ## How to Run the Demo Script
 
