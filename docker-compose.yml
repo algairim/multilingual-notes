@@ -81,7 +81,7 @@ services:
         VITE_KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID}
     restart: unless-stopped
     ports:
-      - "8081:80"
+      - "8081:8081"
     depends_on:
       - backend
 
