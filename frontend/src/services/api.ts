@@ -1,4 +1,5 @@
 import axios from 'axios';
+import Keycloak from 'keycloak-js';
 
 // --- Type Definitions (Mirrored from Backend) ---
 // These types are imported by useAuth
@@ -41,20 +42,42 @@ const API_URL = (import.meta as any).env.VITE_API_URL || 'http://localhost:3000'
 
 // Create the axios instance
 const api = axios.create({
-  baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  baseURL: API_URL
 });
 
-// --- Auth Token Interceptor ---
-// This interceptor checks for the auth token in localStorage
-// and adds it to the Authorization header of *every* request.
+// Keycloak Instance Management
+let keycloakInstance: Keycloak | null = null;
+
+/**
+ * This function is called by the AuthProvider (in useAuth.tsx)
+ * once Keycloak has been successfully initialized.
+ * @param keycloak The initialized Keycloak instance
+ */
+export const setKeycloakInstance = (keycloak: Keycloak) => {
+  keycloakInstance = keycloak;
+};
+
+// --- Axios Request Interceptor ---
+// This is the critical piece that solves the 401 Unauthorized error.
+// It intercepts every API request and adds the auth token.
 api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('authToken'); // Use the key set by setAuthToken
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+  async (config) => {
+    // Check if Keycloak is initialized and the user is authenticated
+    if (keycloakInstance && keycloakInstance.authenticated) {
+      try {
+        // Silently refresh the token if it's about to expire (e.g., within 5 seconds)
+        // This is an async operation, which is why the interceptor is async.
+        await keycloakInstance.updateToken(5);
+
+        // Attach the (potentially refreshed) token to the Authorization header
+        if (keycloakInstance.token) {
+          config.headers.Authorization = `Bearer ${keycloakInstance.token}`;
+        }
+      } catch (error) {
+        console.error('Failed to refresh token:', error);
+        // If refresh fails, log the user out to be safe
+        keycloakInstance.logout();
+      }
     }
     return config;
   },
@@ -63,4 +86,5 @@ api.interceptors.request.use(
   },
 );
 
+// --- Export the configured Axios instance ---
 export default api;
