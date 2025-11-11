@@ -1,0 +1,40 @@
+{
+  "realm": "notes_realm",
+  "enabled": true,
+  "passwordPolicy": "length(8) and digits(1) and specialChars(1) and upperCase(1) and lowerCase(1) and notUsername(undefined)",
+  "registrationAllowed": true,
+  "verifyEmail": false,
+  "clients": [
+    {
+      "clientId": "notes_client",
+      "enabled": true,
+      "publicClient": true,
+      "protocol": "openid-connect",
+      "redirectUris": [
+        "http://localhost:8081/*"
+      ],
+      "webOrigins": [
+        "http://localhost:8081"
+      ],
+      "directAccessGrantsEnabled": true
+    }
+  ],
+  "users": [
+    {
+      "username": "user",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Test",
+      "lastName": "User",
+      "email": "user@example.com",
+      "requiredActions": [],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Passw0rd!",
+          "temporary": false
+        }
+      ]
+    }
+  ]
+}

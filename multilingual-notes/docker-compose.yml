@@ -2,7 +2,6 @@ version: '3.9'
 
 services:
   # 1. Database Service (PostgreSQL)
-  # Uses an official existing image
   db:
     image: postgres:15-alpine
     restart: unless-stopped
@@ -11,10 +10,8 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_NAME:-multilingual_notes}
     ports:
-      # Exposes Postgres on host port 5433 to avoid conflicts
       - "5433:5432"
     volumes:
-      # Persists database data on the host machine using a named volume
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-app_user} -d ${DB_NAME:-multilingual_notes}"]
@@ -23,56 +20,48 @@ services:
       retries: 5
 
   # 2. Auth Service (Keycloak)
-  # Uses an official existing image for separate auth
   keycloak:
     image: quay.io/keycloak/keycloak:latest
     restart: unless-stopped
-    command: ["start-dev"]
+    command: ["start-dev", "--import-realm"]
     environment:
-      # Admin user for the Keycloak UI
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN_USER}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
-      # Database connection (uses the 'db' service)
       KC_DB: postgres
       KC_DB_URL_HOST: db
       KC_DB_URL_DATABASE: ${DB_NAME:-multilingual_notes}
       KC_DB_USERNAME: ${DB_USER:-app_user}
       KC_DB_PASSWORD: ${DB_PASSWORD}
-      # Puts Keycloak tables in a separate 'keycloak' schema
-      KC_DB_SCHEMA: keycloak
-      # Hostname for accessing the Keycloak UI from your browser
       KC_HOSTNAME: localhost
     ports:
-      # Exposes Keycloak admin UI
       - "8080:8080"
+    volumes:
+      # This file defines the realm and client, imported on first boot
+      - ./docker/keycloak/notes-realm.json:/opt/keycloak/data/import/realm.json
     depends_on:
       db:
-        condition: service_healthy # Waits for db to be ready
+        condition: service_healthy
 
   # 3. Backend Service (NestJS)
-  # Builds from your local 'backend' directory
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     restart: unless-stopped
     ports:
-      # Exposes the Node.js API
       - "3000:3000"
     environment:
       NODE_ENV: production
       PORT: 3000
-      # Database connection string for the backend app
       DATABASE_URL: "postgresql://${DB_USER:-app_user}:${DB_PASSWORD}@db:5432/${DB_NAME:-multilingual_notes}?schema=public"
-      # Keycloak settings (for validating JWTs)
-      # Uses 'keycloak:8080' for internal service-to-service communication
+
+      # These are now the only auth variables needed
       KEYCLOAK_AUTH_URL: http://keycloak:8080/realms/${KEYCLOAK_REALM}
       KEYCLOAK_REALM: ${KEYCLOAK_REALM}
       KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID}
-      # External API for translation
+
       TRANSLATION_API_URL: ${TRANSLATION_API_URL}
     volumes:
-      # [cite_start]Links a local dir for audit logs [cite: 49]
       - ./logs:/usr/src/app/logs
     depends_on:
       keycloak:
@@ -81,12 +70,10 @@ services:
         condition: service_healthy
 
   # 4. Frontend Service (React + Vite)
-  # Builds from your local 'frontend' directory
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-      # Passes build-time arguments to Vite
       args:
         VITE_API_URL: http://localhost:3000
         VITE_KEYCLOAK_URL: http://localhost:8080
@@ -94,12 +81,10 @@ services:
         VITE_KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID}
     restart: unless-stopped
     ports:
-      # Exposes the React app
       - "8081:80"
     depends_on:
       - backend
 
-# Defines the named volume for persisting Postgres data
 volumes:
   postgres_data:
     driver: local
