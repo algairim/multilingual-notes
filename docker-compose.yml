@@ -79,11 +79,6 @@ services:
       # LT_UPDATE_MODELS: true              # Automatically update models on startup
       # LT_DEBUG: false                     # Enable debug logging
 
-      # Frontend Configuration (Only relevant if LT_DISABLE_WEB_UI is false)
-      # LT_FRONTEND_LANGUAGE_SOURCE: auto
-      # LT_FRONTEND_LANGUAGE_TARGET: en
-      # LT_FRONTEND_TIMEOUT: 1000
-
     healthcheck:
       # Simple healthcheck to confirm the API is running and returns the language list
       test: ["CMD", "curl", "-f", "http://localhost:5000/languages"]
