@@ -1,4 +1,4 @@
-version: '3.9'
+#version: '3.9'
 
 services:
   # 1. Database Service (PostgreSQL)
@@ -25,8 +25,8 @@ services:
     restart: unless-stopped
     command: ["start-dev", "--import-realm"]
     environment:
-      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN_USER}
-      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USER}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
       KC_DB: postgres
       KC_DB_URL_HOST: db
       KC_DB_URL_DATABASE: ${DB_NAME:-multilingual_notes}
