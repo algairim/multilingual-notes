@@ -92,6 +92,12 @@ export class TranslateService {
     target: string,
   ): Promise<string> {
     const apiUrl = this.configService.get<string>('TRANSLATION_API_URL');
+    this.logger.log('--------------------------');
+    this.logger.log(`apiUrl: ${apiUrl}`);
+    this.logger.log(`text: ${text}`);
+    this.logger.log(`source: ${source}`);
+    this.logger.log(`target: ${target}`);
+    this.logger.log('--------------------------');
 
     // Use mock translator if no API URL is provided
     if (!apiUrl) {
@@ -108,6 +114,9 @@ export class TranslateService {
           format: 'text',
         }),
       );
+      this.logger.log(`translatedText: \n${JSON.stringify(response.data, null, 2)}`);
+      this.logger.log('--------------------------');
+
       return response.data.translatedText;
     } catch (error) {
       this.logger.error('External translation API failed', error.stack);

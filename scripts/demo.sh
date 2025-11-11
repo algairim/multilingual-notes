@@ -213,6 +213,10 @@ curl -s -X POST \
       }' | jq
 echo ""
 
+echo "--- Languages available in translator ---"
+curl -f http://localhost:5001/languages
+echo ""
+
 # ===================================================================
 # 6. Call Backend API: Delete the Note
 # ===================================================================

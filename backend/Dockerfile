@@ -28,7 +28,7 @@ RUN npm run build
 FROM node:18-alpine
 
 # Install curl using apk, and use --no-cache to keep the image size minimal
-#RUN apk --no-cache add curl
+#RUN apk --no-cache add curl # TODO: this is for debugging
 
 WORKDIR /usr/src/app
 

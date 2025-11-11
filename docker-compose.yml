@@ -44,7 +44,55 @@ services:
       db:
         condition: service_healthy
 
-  # 3. Backend Service (NestJS)
+  # 3. Translation Service (LibreTranslate - Custom Build)
+  translator:
+    # Build using the custom Dockerfile
+    build:
+      context: ./docker/libretranslate
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      # Expose the API on port 5001 on the host for easy testing. Internal port is 5000.
+      - "5001:5000"
+
+    # General Configuration
+    environment:
+      # Optional: Specify a list of languages to load to save resources and startup time.
+      # Full list of available languages can be omitted, but will load all by default.
+      # Example: LT_LOAD_ONLY: en,es,fr,de,ja,zh
+      LT_LOAD_ONLY: ${TRANSLATOR_LANGUAGES} # Only load language models of interest to save resources
+      # LT_THREADS: 4                       # Number of threads to use (default 4)
+      # LT_URL_PREFIX: /api                 # Adds a URL prefix to all endpoints
+
+      # Rate Limiting & Security
+      # LT_API_KEYS: true                   # Enable API key database for rate limits
+      # LT_REQ_LIMIT: 60                    # Max requests per minute per client (without API key)
+      # LT_CHAR_LIMIT: 5000                 # Max character count per request
+      # LT_BATCH_LIMIT: 50                  # Max texts in a single batch request
+      # LT_UNDER_ATTACK: false              # Require API key for all requests if true
+      # LT_API_KEYS_DB_PATH: db/api_keys.db # Path for local API key database
+
+      # Features
+      LT_DISABLE_WEB_UI: true               # Disable the web frontend
+      # LT_DISABLE_FILES_TRANSLATION: true  # Disable file translation endpoint
+      # LT_SUGGESTIONS: false               # Disable user suggestions
+      # LT_UPDATE_MODELS: true              # Automatically update models on startup
+      # LT_DEBUG: false                     # Enable debug logging
+
+      # Frontend Configuration (Only relevant if LT_DISABLE_WEB_UI is false)
+      # LT_FRONTEND_LANGUAGE_SOURCE: auto
+      # LT_FRONTEND_LANGUAGE_TARGET: en
+      # LT_FRONTEND_TIMEOUT: 1000
+
+    healthcheck:
+      # Simple healthcheck to confirm the API is running and returns the language list
+      test: ["CMD", "curl", "-f", "http://localhost:5000/languages"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  # 4. Backend Service (NestJS)
   backend:
     build:
       context: ./backend
@@ -62,7 +110,8 @@ services:
       KEYCLOAK_REALM: ${KEYCLOAK_REALM}
       KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID}
 
-      TRANSLATION_API_URL: ${TRANSLATION_API_URL}
+      # Translation URL: Uses the internal Docker network hostname 'translator'
+      TRANSLATION_API_URL: http://translator:5000/translate
     volumes:
       - ./logs:/usr/src/app/logs
     depends_on:
@@ -70,8 +119,10 @@ services:
         condition: service_started
       db:
         condition: service_healthy
+      translator:
+        condition: service_started
 
-  # 4. Frontend Service (React + Vite)
+  # 5. Frontend Service (React + Vite)
   frontend:
     build:
       context: ./frontend
