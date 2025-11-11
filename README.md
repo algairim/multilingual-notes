@@ -30,4 +30,8 @@ TODO...
 
 ## LLM analysis
 
-See [LLM queries](docs) used for initial analysis and design drafts.
+See [LLM queries](docs) used for initial analysis, design drafts and generated code.
+
+## Development
+
+Refer to [dev guide](./docs/dev.md) for detailed development instructions.

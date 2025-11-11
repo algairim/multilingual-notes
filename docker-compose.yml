@@ -1,4 +1,4 @@
-#version: '3.9'
+version: '3.9'
 
 services:
   # 1. Database Service (PostgreSQL)
@@ -6,32 +6,34 @@ services:
     image: postgres:15-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${DB_USER:-app_user}
+      POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_NAME:-multilingual_notes}
+      POSTGRES_DB: ${DB_NAME}
     ports:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-app_user} -d ${DB_NAME:-multilingual_notes}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   # 2. Auth Service (Keycloak)
   keycloak:
-    image: quay.io/keycloak/keycloak:latest
+    image: keycloak/keycloak:26.4 # The new official image
     restart: unless-stopped
+    # 'start-dev' for dev mode
     command: ["start-dev", "--import-realm"]
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USER}
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
       KC_DB: postgres
       KC_DB_URL_HOST: db
-      KC_DB_URL_DATABASE: ${DB_NAME:-multilingual_notes}
-      KC_DB_USERNAME: ${DB_USER:-app_user}
+      KC_DB_URL_DATABASE: ${DB_NAME}
+      KC_DB_USERNAME: ${DB_USER}
       KC_DB_PASSWORD: ${DB_PASSWORD}
+      # 'localhost' for dev mode
       KC_HOSTNAME: localhost
     ports:
       - "8080:8080"
@@ -53,7 +55,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
-      DATABASE_URL: "postgresql://${DB_USER:-app_user}:${DB_PASSWORD}@db:5432/${DB_NAME:-multilingual_notes}?schema=public"
+      DATABASE_URL: "postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}?schema=public"
 
       # These are now the only auth variables needed
       KEYCLOAK_AUTH_URL: http://keycloak:8080/realms/${KEYCLOAK_REALM}
